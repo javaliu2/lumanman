@@ -60,9 +60,9 @@ public class _416分割等和子集 {
         int target = sum / 2, n = nums.length;
         boolean[] dp = new boolean[target + 1];
         dp[0] = true;
-        for (int i = 0; i < n; i++) {
-            for (int c = target; c >= nums[i]; c--) {
-                dp[c] = dp[c] || dp[c - nums[i]];
+        for (int num : nums) {
+            for (int c = target; c >= num; c--) {
+                dp[c] = dp[c] || dp[c - num];
             }
         }
         return dp[target];
