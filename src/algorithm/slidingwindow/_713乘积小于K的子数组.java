@@ -15,9 +15,6 @@ public class _713乘积小于K的子数组 {
      * 存在 bug，考虑 nums=[10,9,10,4,3,8,3,3,6,2,10,10,9,3]，k=19
      * p = 4 * 3 * 8 = 96, 移除4，p->24, 但是24 > 19，故需要继续移除
      * 所以移除左侧元素【直至】p < k, 应采用while逻辑
-     * @param nums
-     * @param k
-     * @return
      */
     public int numSubarrayProductLessThanK(int[] nums, int k) {
         if (k <= 1) {
