@@ -57,6 +57,13 @@ public class _1287有序数组中出现次数超过25percent的元素 {
         return -1;
     }
 
+    /**
+     * 当目标值target存在于arr中时，返回其第一次出现的索引
+     * 否则返回大于target的第一个值的索引
+     * @param arr
+     * @param target
+     * @return
+     */
     private int binarySearch(int[] arr, int target) {
         int lo = 0, hi = arr.length - 1;
         int res = arr.length;
