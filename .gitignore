@@ -32,4 +32,4 @@ bin/
 /src/cpp/**/main
 .idea/
 lumanman.iml
-.xlsx
+*.xlsx
