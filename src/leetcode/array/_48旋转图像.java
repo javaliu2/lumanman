@@ -18,7 +18,8 @@ public class _48旋转图像 {
                     t = t2;
                     int tt = ii;
                     ii = jj;
-                    jj = n-1-tt;  // 这里出错了，这里的ii已经是修改后的ii
+//                    jj = n-1-ii;  // 这里出错了，这里的ii已经是修改后的ii
+                    jj = n-1-tt;
                 }
             }
         }
