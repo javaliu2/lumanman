@@ -33,3 +33,4 @@ bin/
 .idea/
 lumanman.iml
 *.xlsx
+*.ser
