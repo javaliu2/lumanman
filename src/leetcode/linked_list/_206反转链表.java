@@ -29,4 +29,20 @@ public class _206反转链表 {
         head.next = null;
         return ans;
     }
+
+    /**
+     * @author Leetcode Official
+     * @param head
+     * @return
+     */
+    public ListNode reverseList_lo(ListNode head) {
+        if (head == null || head.next == null) {
+            return head;
+        }
+        ListNode newHead = reverseList_lo(head.next);
+        head.next.next = head;
+        head.next = null;
+        return newHead;
+    }
+
 }
