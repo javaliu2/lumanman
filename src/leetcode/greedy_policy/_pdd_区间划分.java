@@ -1,7 +1,4 @@
 package leetcode.greedy_policy;
-
-import org.example.Main;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
