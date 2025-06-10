@@ -1,4 +1,4 @@
-package javaguide.base.multi_thread;
+package javaguide.multi_thread;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**

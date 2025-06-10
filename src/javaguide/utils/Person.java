@@ -1,4 +1,4 @@
-package javaguide.base.utils;
+package javaguide.utils;
 
 public class Person extends PersonParent{
     String sayHello() {

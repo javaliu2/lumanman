@@ -1,4 +1,4 @@
-package javaguide.base.multi_thread;
+package javaguide.multi_thread;
 
 /**
  * JVM实现的多线程是 核心级线程（kernel level thread）以实现真正多核并发执行

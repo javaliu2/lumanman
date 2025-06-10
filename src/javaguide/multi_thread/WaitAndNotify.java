@@ -1,4 +1,4 @@
-package javaguide.base.multi_thread;
+package javaguide.multi_thread;
 
 /**
  * wait(): 当前线程释放锁并且挂起，等待被notify()或notifyAll()唤醒。必须在synchronized中使用。

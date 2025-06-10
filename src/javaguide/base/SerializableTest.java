@@ -1,7 +1,6 @@
 package javaguide.base;
 
 import java.io.*;
-import java.sql.SQLOutput;
 
 public class SerializableTest {
     public static void serializeObject(Human human, String filename) {

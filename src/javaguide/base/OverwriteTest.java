@@ -1,8 +1,7 @@
 package javaguide.base;
 
-import javaguide.base.utils.Person;
-import javaguide.base.utils.PersonParent;
-import javaguide.base.utils.Student;
+import javaguide.utils.Person;
+import javaguide.utils.Student;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

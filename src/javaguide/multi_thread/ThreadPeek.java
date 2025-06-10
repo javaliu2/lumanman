@@ -1,4 +1,4 @@
-package javaguide.base.multi_thread;
+package javaguide.multi_thread;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;

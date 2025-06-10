@@ -1,4 +1,4 @@
-package javaguide.base.collection;
+package javaguide.collection;
 
 import java.util.*;
 
