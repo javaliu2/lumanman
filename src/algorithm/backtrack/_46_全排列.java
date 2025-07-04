@@ -19,7 +19,7 @@ public class _46_全排列 {
         } else {
             for (int i = start; i < nums.length; ++i) {
                 swap(nums, start, i);
-                dfs(nums, start + 1, ans);
+                dfs(nums, start + 1, ans);  // 注意这里是start+1，而不是i+1
                 swap(nums, start, i);
             }
         }
