@@ -1,0 +1,59 @@
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
+        Node[] tab;
+        int n;
+        if ((tab = this.table) == null || (n = tab.length) == 0) {
+            n = (tab = this.resize()).length;
+        }
+
+        Object p;
+        int i;
+        // i = n - 1 & hash ==> (n-1)&hash
+        if ((p = tab[i = n - 1 & hash]) == null) {  // [i]的位置没有节点，直接插入
+            tab[i] = this.newNode(hash, key, value, (Node)null);
+        } else {
+            Object e;
+            Object k;
+            if (((Node)p).hash == hash && ((k = ((Node)p).key) == key || key != null && key.equals(k))) {  // 插入的结点等于[i]的头结点
+                e = p;
+            } else if (p instanceof TreeNode) {
+                e = ((TreeNode)p).putTreeVal(this, tab, hash, key, value);
+            } else {
+                int binCount = 0;
+
+                while(true) {
+                    if ((e = ((Node)p).next) == null) {
+                        ((Node)p).next = this.newNode(hash, key, value, (Node)null);
+                        if (binCount >= 7) {  // 链表节点大于等于8，将其转化为红黑树
+                            this.treeifyBin(tab, hash);
+                        }
+                        break;
+                    }
+					// 插入的结点等于[i]链表中的某一个结点
+                    if (((Node)e).hash == hash && ((k = ((Node)e).key) == key || key != null && key.equals(k))) {  
+                        break;
+                    }
+
+                    p = e;
+                    ++binCount;
+                }
+            }
+			// onlyIfAbsent: 1) true: key不存在的话才会更新value; 2) false: key存在与否都会更新value
+            if (e != null) {  // true表明e和新节点key相等，根据onlyIfAbsent替换掉原来的value，
+                V oldValue = ((Node)e).value;
+                if (!onlyIfAbsent || oldValue == null) {
+                    ((Node)e).value = value;
+                }
+
+                this.afterNodeAccess((Node)e);
+                return oldValue;
+            }
+        }
+
+        ++this.modCount;
+        if (++this.size > this.threshold) {
+            this.resize();
+        }
+
+        this.afterNodeInsertion(evict);
+        return null;
+    }

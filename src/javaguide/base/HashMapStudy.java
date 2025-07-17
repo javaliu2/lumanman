@@ -1,8 +1,10 @@
 package javaguide.base;
 
 import org.junit.Test;
+import org.openjdk.jol.vm.VM;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 public class HashMapStudy {
     int x = 10;
@@ -16,7 +18,7 @@ public class HashMapStudy {
     }
 
     public static void main(String[] args) {
-        HashMap h = new HashMap();
+        HashMap<String, String> h = new HashMap<>();
         Object o;
         String s;
 
@@ -69,5 +71,57 @@ public class HashMapStudy {
         System.out.println(s1.equals(s2));              // true
         System.out.println(s1.hashCode());              // 96354，因为字符串内容一样
         System.out.println(s2.hashCode());              // 96354，因为字符串内容一样
+    }
+
+    /**
+     * 两个对象的equals相等，那么他们的hashCode一定相等，反之不一定，因为存在hash冲突
+     */
+    @Test
+    public void hashCodeAndEquals() {
+        Person p = new Person("xs", 25);
+        Person p2 = new Person("cr", 25);
+        System.out.println(p);  // 默认实现: 全类名@hex(hashCode)
+        System.out.println(p2);
+        System.out.println(p == p2); // 比较的是对象的引用地址，注意不是hashCode，因为hashCode随着实现不同而不同
+        // 存在hashCode值一样，但是==比较为false的情况
+        // hashCode主要用于hash容器中快速定位而设计
+        System.out.println(Integer.toHexString(p.hashCode()));  // 默认实现: 返回对象在内存中的地址的哈希值
+//        System.out.println(Integer.toHexString(p2.hashCode()));
+
+        Object obj = new Object();
+        long address = VM.current().addressOf(obj);
+        System.out.println("内存地址: 0x" + Long.toHexString(address));  // 内存地址: 0x7164131c8
+    }
+
+}
+class Person {
+    private String name;
+    private Integer age;
+    Person() {
+
+    }
+    Person(String name, Integer age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    @Override
+    public int hashCode() {
+        System.out.println(this.name.hashCode());
+        System.out.println(this.age.hashCode());
+        return Objects.hash(name, age);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        // 自反
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Person p2 = (Person) obj;
+        return Objects.equals(this.name, p2.name) && Objects.equals(this.age, p2.age);
     }
 }
