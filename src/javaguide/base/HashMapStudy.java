@@ -93,6 +93,22 @@ public class HashMapStudy {
         System.out.println("内存地址: 0x" + Long.toHexString(address));  // 内存地址: 0x7164131c8
     }
 
+    @Test
+    public void testhashCodeAndEquals2() {
+        /**
+         * 表述清楚，文字表述真的是很关键。对于世间法和出世间法都很关键。
+         */
+        // 1) a.hashCode()==b.hashCode()，equals(a,b)可能为true或者false，因为存在hash冲突
+        // 反之，equals(a,b)为false，两者的hashCode可能相等也可能不相等
+        String a = "Aa";
+        String b = "BB";
+        System.out.println(a.hashCode()); // 2112
+        System.out.println(b.hashCode()); // 2112
+        System.out.println(a.equals(b));  // false
+        // 2) equals(a,b)==true，那么a.hashCode一定等于b.hashCode
+        // 下面是2)的逆否命题
+        // a.hashCode()!=b.hashCode()，equals(a,b)一定为false
+    }
 }
 class Person {
     private String name;
