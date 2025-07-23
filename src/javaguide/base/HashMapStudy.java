@@ -19,10 +19,9 @@ public class HashMapStudy {
 
     public static void main(String[] args) {
         HashMap<String, String> h = new HashMap<>();
+        h.put("name", "xs");
         Object o;
         String s;
-
-
     }
 
     /**
