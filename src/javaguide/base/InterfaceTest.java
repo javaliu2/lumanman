@@ -12,7 +12,7 @@ public interface InterfaceTest {
     static void staticMeth(){  // java8 引入
         System.out.println("static method");
     }
-    private void privateMeth(){  // java9 引入
-        System.out.println("private meth");
-    }
+//    private void privateMeth(){  // java9 引入
+//        System.out.println("private meth");
+//    }
 }

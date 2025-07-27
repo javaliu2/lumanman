@@ -35,7 +35,7 @@ public class _2730找到最长的半重复子字符串 {
      * @return
      */
     public int longestSemiRepetitiveSubstring2(String S) {
-        var s = S.toCharArray();
+        char[] s = S.toCharArray();
         int ans = 1, left = 0, same = 0, n = s.length;
         for (int right = 1; right < n; right++) {
             if (s[right] == s[right - 1] && ++same > 1) {

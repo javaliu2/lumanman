@@ -4,7 +4,13 @@ import org.junit.Test;
 import org.openjdk.jol.vm.VM;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 public class HashMapStudy {
     int x = 10;
@@ -107,6 +113,57 @@ public class HashMapStudy {
         // 2) equals(a,b)==true，那么a.hashCode一定等于b.hashCode
         // 下面是2)的逆否命题
         // a.hashCode()!=b.hashCode()，equals(a,b)一定为false
+    }
+
+    @Test
+    public void testNull(){
+        // 1、可以存放null key，但是只能有一个
+        // 因为null key的hash值为0，所以第二次put null key的时候会把第一次的null key值替换掉
+        HashMap<String, String> map = new HashMap<>();
+        map.put(null, null);
+        String s = map.get(null);
+        System.out.println(s);  // null
+        map.put(null, "xs");
+        s = map.get(null);
+        System.out.println(s);  // xs
+        // 2、可以存放null value，可以有多个
+        // 因为key，value是存放于Node节点中，所以两者均可以为null，hash(key)会作为数组索引，所以null key只能有一个
+        // 而null value可以有多个
+        map.put("xs", "current is future.");
+        map.put("cr", "随缘, 随缘.");
+        map.put("lf", null);
+        map.put("yr", null);
+    }
+
+    @Test
+    public void testConcurrentCauseProblem() throws InterruptedException {
+        Map<String, LongAdder> map;
+         map = new HashMap<>();  // 非线程安全
+//        map = new ConcurrentHashMap<>(); // 替换为线程安全版本
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        for (int i = 0; i < 1000; i++) {
+            int finalI = i;
+            executor.submit(() -> {
+                String key = "key" + (finalI % 100);
+//                map.put(key, map.getOrDefault(key, 0) + 1);  // 非原子操作，存在累加丢失问题
+                map.computeIfAbsent(key, k -> new LongAdder()).increment();
+            });
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+
+        System.out.println("Map size: " + map.size());
+        System.out.println("Sample: " + map.entrySet().stream().limit(10).toList());
+        // hashmap版本，统计所有value之和是否为1000？ 结果: 991, 987, 1000
+        long sum = map.values().stream().mapToLong(LongAdder::sum).sum();
+        System.out.println("sum: " + sum);  // 979,995,996
+        // concurrentHashmap版本，sum为998
+        // 原因是map.put(key, map.getOrDefault(key, 0) + 1);不是原子操作，就算是后者也有可能出现累加丢失的问题
+        // 使用LongAdder之后，hashmap三次结果分别是979,995,996，出现了累加丢失的问题
+        // 而concurrentHashmap三次结果均为1000，满足expectation
     }
 }
 class Person {
