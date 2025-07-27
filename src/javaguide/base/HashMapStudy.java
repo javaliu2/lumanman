@@ -11,6 +11,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 public class HashMapStudy {
     int x = 10;
@@ -164,6 +166,34 @@ public class HashMapStudy {
         // 原因是map.put(key, map.getOrDefault(key, 0) + 1);不是原子操作，就算是后者也有可能出现累加丢失的问题
         // 使用LongAdder之后，hashmap三次结果分别是979,995,996，出现了累加丢失的问题
         // 而concurrentHashmap三次结果均为1000，满足expectation
+    }
+    @Test
+    public void testConcurrentHashmap() {
+        ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
+        map.put("xs", "current is future.");
+        map.put("cr", "i only say ok.");
+        // 接收两个参数和一个返回值的函数式接口
+        BiFunction<String, String, String> transformer = (key, value) -> {
+            return "name: " + key + ", motto: " + value;
+        };
+        // 接收一个参数，没有返回值，对该参数执行某种操作，一般是有副作用的（涉及到输出、修改变量值，修改对象状态等）
+        Consumer<String> action = System.out::println;
+        map.forEach(1, transformer, action);
+        String search = map.search(1, (key, value) -> {
+            if ("xs".equals(key)) {
+                return value;
+            }
+            return null;
+        });
+        System.out.println(search);
+//        因为是函数式接口，所以可以使用lambda表达式，实现的就是对应接口中的唯一方法
+        String reducedEntries = map.reduceEntries(1,
+                entry -> entry.getKey() + "=" + entry.getValue(),
+                (s1, s2) -> s1 + ", " + s2);
+        System.out.println(reducedEntries);
+
+        Integer integer = map.reduceValues(1, value -> value.length() > 3 ? value.length() : null, Integer::sum);  // null表示不归约这个值
+        System.out.println(integer);
     }
 }
 class Person {
