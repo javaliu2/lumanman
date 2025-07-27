@@ -343,66 +343,107 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /*
      * Overview:
-     *
+     * 
      * The primary design goal of this hash table is to maintain
      * concurrent readability (typically method get(), but also
      * iterators and related methods) while minimizing update
-     * contention. Secondary goals are to keep space consumption about
+     * contention. 
+     * 这个hash表主要的设计目标是在最小化更新竞争的时候维护并发读能力（通常是get方法，也有迭代器和相关的方法）。
+     * gbro:这个哈希表的首要设计目标是：
+       在尽可能减少写操作之间竞争的同时，保持对数据的并发读取能力,通常指的是 get() 方法的并发读取，
+       也包括迭代器（iterator()）和其他相关的读取方法。
+     * Secondary goals are to keep space consumption about
      * the same or better than java.util.HashMap, and to support high
      * initial insertion rates on an empty table by many threads.
-     *
-     * This map usually acts as a binned (bucketed) hash table.  Each
-     * key-value mapping is held in a Node.  Most nodes are instances
-     * of the basic Node class with hash, key, value, and next
-     * fields. However, various subclasses exist: TreeNodes are
-     * arranged in balanced trees, not lists.  TreeBins hold the roots
-     * of sets of TreeNodes. ForwardingNodes are placed at the heads
-     * of bins during resizing. ReservationNodes are used as
-     * placeholders while establishing values in computeIfAbsent and
-     * related methods.  The types TreeBin, ForwardingNode, and
+     * 第二是保持和Hashmap一样的空间消耗或者更少，并且在空表上由多个线程操作时支持高的初始化插入比率。
+     * gbro: 次要目标是：保持与 java.util.HashMap 相当或更低的内存占用，并且在空表状态下，能够支持多个线程高效地进行初始插入操作。
+     * This map usually acts as a binned (bucketed) hash table. 
+     * 这个map通常作为桶hash表。Each key-value mapping is held in a Node.  
+     * 每一个键值对存储在一个Node中。
+     * Most nodes are instances of the basic Node class with hash, key, value, and next
+     * fields. 大多数节点是基本Node类型的实例，它包括四个字段，分别是hash，key，value和next. 
+     * However, various subclasses exist: TreeNodes are
+     * arranged in balanced trees, not lists.  
+     * 但是，存在多种子类型，TreeNode被排列为平衡树，而不是链表。
+     * TreeBins hold the roots of sets of TreeNodes. 
+     * 树桶保存着TreeNode节点集合的根。
+     * ForwardingNodes are placed at the heads of bins during resizing. 
+     * 在resize的时候，ForwardingNodes被放置在桶的头。
+     * gbro: 在 扩容（resize） 过程中，ForwardingNode 会被放置在桶（bin）的头部。
+     * ReservationNodes are used as placeholders while establishing values in computeIfAbsent and
+     * related methods.  
+     * 在computeIfAbsent和相关方法中建立值时，ReservationNodes被用于置位符。
+     * gbro: 在 computeIfAbsent 及相关方法中建立值的过程中，ReservationNode 被用作占位符。
+     * The types TreeBin, ForwardingNode, and
      * ReservationNode do not hold normal user keys, values, or
      * hashes, and are readily distinguishable during search etc
      * because they have negative hash fields and null key and value
      * fields. (These special nodes are either uncommon or transient,
      * so the impact of carrying around some unused fields is
      * insignificant.)
-     *
+     * 树桶，向前节点和保留节点没有存储一般的key,value或者hash值，因为他们有负的hash字段和null的key和value。
+     * 这些特殊的节点要么不公共，要么是临时的，因此携带一些未使用的字段是不重要的。
+     * TreeBin、ForwardingNode 和 ReservationNode 这几种类型的节点不存储正常的用户 key、value 或 hash 值，
+     * 因为它们的 hash 字段为负值，key 和 value 字段为 null，因此在搜索等操作中可以很容易地区分出来。
+     * 这些特殊节点要么比较少见，要么生命周期很短（临时存在），所以即使它们携带了一些未使用的字段，对性能和内存的影响也可以忽略不计。
      * The table is lazily initialized to a power-of-two size upon the
-     * first insertion.  Each bin in the table normally contains a
+     * first insertion. 
+     * 表在第一次插入的时候被懒初始化为2的次方大小。
+     * Each bin in the table normally contains a
      * list of Nodes (most often, the list has only zero or one Node).
+     * 表中每一个桶通常包含一个Node列表（大多数时候，列表有0或者1个Node）
      * Table accesses require volatile/atomic reads, writes, and
-     * CASes.  Because there is no other way to arrange this without
+     * CASes. 
+     * 表访问需要可见的或原子性的读、写和CASes.
+     * gbro： 对表（table）的访问需要使用 volatile 或原子性的读写操作，以及 CAS（比较并交换）操作。
+     * Because there is no other way to arrange this without
      * adding further indirections, we use intrinsics
      * (jdk.internal.misc.Unsafe) operations.
-     *
+     * gbro: 因为如果不引入更多间接层（indirections），就没有其他方式来实现这一点，
+     * 所以我们使用了内在函数（intrinsics），即 jdk.internal.misc.Unsafe 提供的操作。
      * We use the top (sign) bit of Node hash fields for control
      * purposes -- it is available anyway because of addressing
      * constraints.  Nodes with negative hash fields are specially
      * handled or ignored in map methods.
-     *
+     * 我们使用Node中hash字段的高位（符号位）用于控制目的，由于地址控制无论如何它是可用的。
+     * hash值为负数的节点在map方法中被特殊处理或者忽略。
      * Insertion (via put or its variants) of the first node in an
-     * empty bin is performed by just CASing it to the bin.  This is
-     * by far the most common case for put operations under most
-     * key/hash distributions.  Other update operations (insert,
-     * delete, and replace) require locks.  We do not want to waste
-     * the space required to associate a distinct lock object with
-     * each bin, so instead use the first node of a bin list itself as
-     * a lock. Locking support for these locks relies on builtin
-     * "synchronized" monitors.
-     *
+     * empty bin is performed by just CASing it to the bin.  
+     * 在一个空的桶中插入（通过put或它的变种）第一个节点的执行只是通过CAS到桶。
+     * This is by far the most common case for put operations under most
+     * key/hash distributions. 
+     * 这是目前为止在大多数key/hash分布下对于put操作最普遍的情况。
+     * gbro: 在一个空桶中插入第一个节点（通过 put 或其变体）时，只需使用 CAS 操作将该节点直接写入桶中。
+     * 在大多数键和哈希分布情况下，这也是 put 操作中最常见的情形。
+     * Other update operations (insert, delete, and replace) require locks. 
+     * 其他更新操作，（插入、删除、替换）需要锁。
+     * We do not want to waste the space required to associate a distinct lock object with
+     * each bin, so instead use the first node of a bin list itself as a lock. 
+     * 我们不想浪费每一个桶需要不同的锁对象花费的空间，因此使用桶列表中第一个节点作为锁对象。
+     * Locking support for these locks relies on builtin "synchronized" monitors.
+     * 对于这些锁的锁支持依赖于内置的synchronized监视器。
+     * gbro: 我们不想为每个桶额外分配一个独立的锁对象以节省空间，所以直接使用桶链表的第一个节点本身作为锁对象。
+     * 这些锁的实现依赖于 Java 内置的 synchronized 监视器机制。
      * Using the first node of a list as a lock does not by itself
      * suffice though: When a node is locked, any update must first
      * validate that it is still the first node after locking it, and
-     * retry if not. Because new nodes are always appended to lists,
+     * retry if not. 
+     * 使用列表第一个节点作为锁是不够的，当一个节点被上锁，任何更新必须首先检查它是否是第一个节点，如果不是，重试。
+     * gbro: 单纯使用链表的第一个节点作为锁并不足够：在锁定该节点后，任何更新操作都必须先确认它仍然是该桶中的第一个节点，
+     * 如果发现不是，则需要重新尝试。
+     * Because new nodes are always appended to lists,
      * once a node is first in a bin, it remains first until deleted
      * or the bin becomes invalidated (upon resizing).
-     *
+     * 因为新的节点总是追加到列表，当一个节点是桶中第一个，它保持第一直到被删除或者桶变无效（由于扩容）。
      * The main disadvantage of per-bin locks is that other update
      * operations on other nodes in a bin list protected by the same
      * lock can stall, for example when user equals() or mapping
-     * functions take a long time.  However, statistically, under
-     * random hash codes, this is not a common problem.  Ideally, the
-     * frequency of nodes in bins follows a Poisson distribution
+     * functions take a long time. 
+     * 每个桶单独加锁的主要缺点是：在同一个桶链表中，其他节点的更新操作也会因为使用相同的锁而被阻塞（stall），
+     * 比如当用户实现的 equals() 方法，或映射函数（如 compute、merge、remappingFunction）执行很慢时，就会让整个桶的操作都卡住。。
+     * However, statistically, under random hash codes, this is not a common problem.  
+     * 然而，按照统计数据，在随机hash值下，这不是一个普遍的问题。
+     * Ideally, the frequency of nodes in bins follows a Poisson distribution
      * (http://en.wikipedia.org/wiki/Poisson_distribution) with a
      * parameter of about 0.5 on average, given the resizing threshold
      * of 0.75, although with a large variance because of resizing
@@ -425,35 +466,56 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * elements is roughly 1 / (8 * #elements) under random hashes.
      *
      * Actual hash code distributions encountered in practice
-     * sometimes deviate significantly from uniform randomness.  This
-     * includes the case when N > (1<<30), so some keys MUST collide.
+     * sometimes deviate significantly from uniform randomness.  
+     * 实践中遇到的实际的hash值分布严重偏离统一随机性。
+     * This includes the case when N > (1<<30), so some keys MUST collide.
+     * 这包括N>(1<<30)的情况，因此一些key必须冲突。
      * Similarly for dumb or hostile usages in which multiple keys are
      * designed to have identical hash codes or ones that differs only
-     * in masked-out high bits. So we use a secondary strategy that
-     * applies when the number of nodes in a bin exceeds a
-     * threshold. These TreeBins use a balanced tree to hold nodes (a
+     * in masked-out high bits. 
+     * 相同的情况包括恶意使用多个key具有相同的hash值或者hashcode只在高位有不同。
+     * So we use a secondary strategy that applies when the number of nodes in a bin exceeds a
+     * threshold. 
+     * 因此，当桶中节点的个数超过某个阈值的时候我们采取第二个策略。
+     * These TreeBins use a balanced tree to hold nodes (a
      * specialized form of red-black trees), bounding search time to
-     * O(log N).  Each search step in a TreeBin is at least twice as
+     * O(log N).  
+     * 这些树桶使用一个平衡树（红黑树的一种特殊形式）来保存节点，保证查找时间位于O(logN)
+     * Each search step in a TreeBin is at least twice as
      * slow as in a regular list, but given that N cannot exceed
      * (1<<64) (before running out of addresses) this bounds search
      * steps, lock hold times, etc, to reasonable constants (roughly
      * 100 nodes inspected per operation worst case) so long as keys
      * are Comparable (which is very common -- String, Long, etc).
+     * 每一步在 TreeBin（树结构的桶）中的查找，至少比在常规链表中慢两倍，
+      但考虑到 N 不会超过1<<64（在地址空间耗尽之前），这使得查找步骤、锁持有时间等操作被限制在合理的常数范围内。
+     （最坏情况下每次操作检查大约 100 个节点），只要 key 是 Comparable 的（这是非常常见的情况，例如 String、Long 等）。
+     * N是map中存储的键值对个数
      * TreeBin nodes (TreeNodes) also maintain the same "next"
      * traversal pointers as regular nodes, so can be traversed in
      * iterators in the same way.
-     *
+     * 树桶节点也维护像常规节点一样的next遍历指针，因此可以采取相同的方式使用iterator遍历。
      * The table is resized when occupancy exceeds a percentage
-     * threshold (nominally, 0.75, but see below).  Any thread
-     * noticing an overfull bin may assist in resizing after the
+     * threshold (nominally, 0.75, but see below).  
+     * hash表在占有率超过阈值的时候扩容。
+     * Any thread noticing an overfull bin may assist in resizing after the
      * initiating thread allocates and sets up the replacement array.
+     * 任何线程在发现某个桶（bin）过满时，都可能在扩容发起线程设置好新数组后参与扩容操作。
      * However, rather than stalling, these other threads may proceed
-     * with insertions etc.  The use of TreeBins shields us from the
+     * with insertions etc.  
+     * 但是，比起阻塞，
+     * The use of TreeBins shields us from the
      * worst case effects of overfilling while resizes are in
-     * progress.  Resizing proceeds by transferring bins, one by one,
-     * from the table to the next table. However, threads claim small
+     * progress. 
+     * 然而，这些其他线程不会被阻塞，而是可以继续进行插入等操作。
+     * Resizing proceeds by transferring bins, one by one,
+     * from the table to the next table. 
+     * 
+     * However, threads claim small
      * blocks of indices to transfer (via field transferIndex) before
-     * doing so, reducing contention.  A generation stamp in field
+     * doing so, reducing contention.  
+     * 
+     * A generation stamp in field
      * sizeCtl ensures that resizings do not overlap. Because we are
      * using power-of-two expansion, the elements from each bin must
      * either stay at same index, or move with a power of two
