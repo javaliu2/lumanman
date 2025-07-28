@@ -503,41 +503,59 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * 任何线程在发现某个桶（bin）过满时，都可能在扩容发起线程设置好新数组后参与扩容操作。
      * However, rather than stalling, these other threads may proceed
      * with insertions etc.  
-     * 但是，比起阻塞，
+     * 但是，比起阻塞，这些其他线程不会被阻塞，而是可以继续进行插入等操作。
      * The use of TreeBins shields us from the
      * worst case effects of overfilling while resizes are in
      * progress. 
-     * 然而，这些其他线程不会被阻塞，而是可以继续进行插入等操作。
+     * 使用 TreeBin（红黑树桶）可以在扩容期间避免最坏情况的溢出影响。
      * Resizing proceeds by transferring bins, one by one,
      * from the table to the next table. 
-     * 
+     * 扩容过程通过转移桶进行，一个又一个，从当前表到下一个表。
      * However, threads claim small
      * blocks of indices to transfer (via field transferIndex) before
      * doing so, reducing contention.  
-     * 
-     * A generation stamp in field
-     * sizeCtl ensures that resizings do not overlap. Because we are
-     * using power-of-two expansion, the elements from each bin must
+     * 在 ConcurrentHashMap 扩容时，多个线程通过 transferIndex 抢占一段桶索引搬迁任务，从而实现高效协作，避免争抢相同桶。
+     * A generation stamp in field sizeCtl ensures that resizings do not overlap. 
+     * 字段sizeCtl中代数戳保证扩容不会重叠。
+     * Because we are using power-of-two expansion, the elements from each bin must
      * either stay at same index, or move with a power of two
-     * offset. We eliminate unnecessary node creation by catching
+     * offset. 
+     * 因为我们使用2的指数扩容，每一个桶中的元素要么留在原索引，要么移动到2的指数偏移的位置。
+     * We eliminate unnecessary node creation by catching
      * cases where old nodes can be reused because their next fields
-     * won't change.  On average, only about one-sixth of them need
-     * cloning when a table doubles. The nodes they replace will be
+     * won't change.  
+     * 我们移除不必要的节点创建在catch情况下，因为旧的节点的next域不会改变，所以他们可以被重用
+     * On average, only about one-sixth of them need
+     * cloning when a table doubles.
+     * 平均来说，在表扩容的时候，只有1/6的节点需要克隆。
+     * The nodes they replace will be
      * garbage collectable as soon as they are no longer referenced by
      * any reader thread that may be in the midst of concurrently
-     * traversing table.  Upon transfer, the old table bin contains
+     * traversing table.  
+     * 被替换的旧节点会变得可被垃圾回收，只要他们不再被任何读线程引用，即没有任何读线程
+     * 正在并发地遍历table并访问这些旧节点。
+     * Upon transfer, the old table bin contains
      * only a special forwarding node (with hash field "MOVED") that
-     * contains the next table as its key. On encountering a
+     * contains the next table as its key. 
+     * 转移过程中，旧表桶只包含一个特殊的前向节点（其hash字段值为MOVED），该节点
+     * 包含下一个表作为他的键。
+     * On encountering a
      * forwarding node, access and update operations restart, using
      * the new table.
-     *
+     * 遇到前向节点的时候，重新进行访问和更新操作，使用新的表。
      * Each bin transfer requires its bin lock, which can stall
-     * waiting for locks while resizing. However, because other
+     * waiting for locks while resizing. 
+     * 每一个桶转移需要它对应的桶锁，在扩容的同时可能阻塞等待锁。
+     * However, because other
      * threads can join in and help resize rather than contend for
      * locks, average aggregate waits become shorter as resizing
-     * progresses.  The transfer operation must also ensure that all
+     * progresses. 
+     * 然而，因为其他的线程可以加入帮助扩容而不是竞争锁，因此平均总计等待时间随着扩容过程的进行变得更短
+     * The transfer operation must also ensure that all
      * accessible bins in both the old and new table are usable by any
-     * traversal.  This is arranged in part by proceeding from the
+     * traversal. 
+     * 转移操作必须保证旧表和新表中可访问的桶是可用的。
+     *  This is arranged in part by proceeding from the
      * last bin (table.length - 1) up towards the first.  Upon seeing
      * a forwarding node, traversals (see class Traverser) arrange to
      * move to the new table without revisiting nodes.  To ensure that
@@ -881,14 +899,22 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /*
      * Atomic access methods are used for table elements as well as
-     * elements of in-progress next table while resizing.  All uses of
-     * the tab arguments must be null checked by callers.  All callers
-     * also paranoically precheck that tab's length is not zero (or an
+     * elements of in-progress next table while resizing.
+     * 对于表元素和扩容过程中下一个表中元素的原子访问方法。
+     * All uses of the tab arguments must be null checked by callers.
+     * 参数tab的所有使用必须又调用者进行非空检查。
+     * All callers also paranoically precheck that tab's length is not zero (or an
      * equivalent check), thus ensuring that any index argument taking
      * the form of a hash value anded with (length - 1) is a valid
-     * index.  Note that, to be correct wrt arbitrary concurrency
+     * index. 
+     * 所有调用者固执地检查tab的长度是不是非0（或等价的检查），以此保证hash值和(length-1)的与运算结果，即table中的index是有效的。
+     * Note that, to be correct wrt arbitrary concurrency
      * errors by users, these checks must operate on local variables,
      * which accounts for some odd-looking inline assignments below.
+     * 请注意，为了在面对用户可能引入的任意并发错误时仍保持正确性，
+        下面的一些检查必须基于局部变量来执行，
+        这也解释了为什么代码中会出现一些看起来奇怪的内联赋值。
+     * 
      * Note that calls to setTabAt always occur within locked regions,
      * and so require only release ordering.
      */
@@ -928,12 +954,19 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private transient volatile long baseCount;
 
     /**
-     * Table initialization and resizing control.  When negative, the
-     * table is being initialized or resized: -1 for initialization,
-     * else -(1 + the number of active resizing threads).  Otherwise,
-     * when table is null, holds the initial table size to use upon
-     * creation, or 0 for default. After initialization, holds the
+     * Table initialization and resizing control. 
+     * 表初始化和扩容控制。
+     * When negative, the table is being initialized or resized: 
+     * 当为负数的时候，表示表正在被初始化或者扩容
+     * -1 for initialization, -1表示初始化
+     * else -(1 + the number of active resizing threads).  
+     * 别的负数，其绝对值表示参与扩容线程的个数。
+     * Otherwise, when table is null, holds the initial table size to use upon
+     * creation, or 0 for default. 
+     * 否则，当表为null时，保存着初始表大小，或者0用于默认。
+     * After initialization, holds the
      * next element count value upon which to resize the table.
+     * 初始化之后，保存的是触发下一次扩容的元素数量阈值。
      */
     private transient volatile int sizeCtl;
 
@@ -2417,11 +2450,14 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Initializes table, using the size recorded in sizeCtl.
+     * 懒加载地初始化 ConcurrentHashMap 的底层数组 table，确保并发线程中只有一个能初始化成功，其他线程等待。
      */
     private final Node<K,V>[] initTable() {
         Node<K,V>[] tab; int sc;
         while ((tab = table) == null || tab.length == 0) {
             if ((sc = sizeCtl) < 0)
+            // Thread.yield() 并不是挂起线程，也不是阻塞线程，它只是告诉调度器：
+            // “我暂时不争用 CPU，愿意让别的线程先执行。
                 Thread.yield(); // lost initialization race; just spin
             else if (U.compareAndSetInt(this, SIZECTL, sc, -1)) {
                 try {
@@ -2430,7 +2466,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                         @SuppressWarnings("unchecked")
                         Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];
                         table = tab = nt;
-                        sc = n - (n >>> 2);
+                        sc = n - (n >>> 2);  // 等价于n-n/4，即将sc设置为capacity*0.75，下次扩容的阈值
                     }
                 } finally {
                     sizeCtl = sc;
