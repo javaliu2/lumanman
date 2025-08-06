@@ -9,7 +9,7 @@ public class String相关 {
     public void testStringEquals() {
         String s = new String("ab");
         char[] chs = {'a', 'b'};
-        boolean equals = s.equals();
+        boolean equals = s.equals(chs);
         System.out.println(equals);
     }
 }
