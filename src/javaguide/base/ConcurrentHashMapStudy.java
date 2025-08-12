@@ -27,7 +27,7 @@ public class ConcurrentHashMapStudy {
         private final AtomicInteger sizeCtl = new AtomicInteger(0); // 初始值为0
 
         // 模拟Node数组
-        static class Node {
+        class Node {
             int val;
             Node(int val) {
                 this.val = val;

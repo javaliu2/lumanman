@@ -158,7 +158,7 @@ public class HashMapStudy {
         executor.awaitTermination(5, TimeUnit.SECONDS);
 
         System.out.println("Map size: " + map.size());
-        System.out.println("Sample: " + map.entrySet().stream().limit(10).toList());
+//        System.out.println("Sample: " + map.entrySet().stream().limit(10).toList());
         // hashmap版本，统计所有value之和是否为1000？ 结果: 991, 987, 1000
         long sum = map.values().stream().mapToLong(LongAdder::sum).sum();
         System.out.println("sum: " + sum);  // 979,995,996
