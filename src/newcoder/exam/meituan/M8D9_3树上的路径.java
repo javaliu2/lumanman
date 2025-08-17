@@ -2,8 +2,6 @@ package newcoder.exam.meituan;
 
 import java.util.*;
 
-import static codefun2000._P2336.solve;
-
 /**
  * 1、为了不使用Visited数组，将edges设置为单向指向，edges[node1][node2]=1
  * 其中node1是值较小的节点，node2是值较大的节点
@@ -21,7 +19,7 @@ import static codefun2000._P2336.solve;
  * 10^5*10^5 * 4(单位:byte) ~= 40GB
  * 所以说要使用邻接表来存储表关系，另外使用dfs的话，有很大的栈内存使用，如果先用bfs将父子节点关系存储起来就不会这样
  */
-public class _M8D9_3树上的路径 {
+public class M8D9_3树上的路径 {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         int n = sc.nextInt();
