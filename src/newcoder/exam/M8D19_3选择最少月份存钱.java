@@ -1,6 +1,7 @@
 package newcoder.exam;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -16,8 +17,50 @@ public class M8D19_3选择最少月份存钱 {
         List<Integer> path = new ArrayList<>();
         int res = dfs(money, target, 0, path);
         int res2 = dfs2(money, target, 0, 0);
+        int res3 = dp(money, target);
         System.out.println(res);
         System.out.println(res2);
+        System.out.println(res3);
+    }
+
+    /**
+     * 有若干月份，每一个月有money[i]多零花钱，不能选择连续两个月份存钱，
+     * 问存至少target钱，所需最少月份数？
+     * dp[i][j]: 前i个月份存至少j钱花费的最少月份数
+     * dp[i][j] = min(dp[i-1][j], dp[i-2][j-money[i]])
+     */
+    private static int dp(int[] money, int target) {
+        int m = money.length;
+        int[][] dp = new int[m][target + 1];
+        for (int[] ints : dp) {
+            Arrays.fill(ints, Integer.MAX_VALUE);
+            ints[0] = 0;  // target是0的时候，所需月份数是0
+        }
+        // 1、初始化
+        for (int i = 0; i < 2; i++) {
+            for (int j = 1; j <= target; j++) {
+                if (money[i] >= j) {
+                    dp[i][j] = 1;
+                }
+            }
+        }
+        // 2、计算
+        for (int i = 2; i < m; i++) {
+            for (int j = 1; j <= target; j++) {
+                dp[i][j] = dp[i - 1][j];  // 2.1、不选当前月份i
+                // 2.2、选择当前月份
+                if (money[i] >= j) {
+                    dp[i][j] = 1;  // 1）只靠当前月就够j钱
+                } else if (dp[i-2][j - money[i]] != Integer.MAX_VALUE) {  // 前i-2个月可以凑j-money[i]钱
+                    dp[i][j] = Math.min(dp[i][j], dp[i-2][j - money[i]] + 1);
+                }
+            }
+        }
+        int ans = Integer.MAX_VALUE;
+        for (int i = 0; i < m; i++) {
+            ans = Math.min(ans, dp[i][target]);
+        }
+        return ans == Integer.MAX_VALUE ? -1 : ans;
     }
 
     private static int dfs2(int[] money, int target, int month, int count) {
