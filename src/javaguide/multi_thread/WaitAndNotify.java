@@ -61,3 +61,103 @@ class Basket {
     }
 }
 
+/**
+ * wait & notify 的正确使用
+ * 1、必须位于synchronized块中
+ * 2、必须在同一个锁对象上等待或通知
+ * 3、使用while进行条件判断和notifyAll方法避免虚假唤醒
+ */
+class ProperUsage {
+    static final Object lock = new Object();
+    static boolean hasPaper;
+    static boolean hasTakeout;
+    public static void main(String[] args) throws InterruptedException {
+        new Thread(() -> {
+            System.out.println("是否有paper: " + hasPaper);
+            synchronized (lock) {
+                while (!hasPaper) {  // 使用 while 判断是否是自己的条件被满足，避免虚假唤醒
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                System.out.println("小明擦屁股");
+            }
+        }, "小明").start();
+
+        new Thread(() -> {
+            System.out.println("是否有takeout: " + hasTakeout);
+            synchronized (lock) {
+                while (!hasTakeout) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                System.out.println("小红吃外卖");
+            }
+        }, "小红").start();
+
+        Thread.sleep(200);
+        synchronized (lock) {
+            System.out.println("老王送来了takeout");
+            hasTakeout = true;
+            lock.notifyAll();  // 使用 notifyAll 避免叫错了人
+        }
+    }
+}
+
+/**
+ * 【设计模式-保护性暂停】
+ * 守护对象，用来在两个线程之间传递数据
+ * t1线程需要等待t2线程执行返回的结果
+ */
+class GuardedObject {
+    private Object result;
+    public Object get(long timeout) {
+        synchronized (this) {
+            long begin = System.currentTimeMillis();
+            long passedTime = 0;
+            while (result == null) {
+                long waitTime = timeout - passedTime;
+                if (waitTime <= 0) {
+                    break;
+                }
+                try {
+                    wait(waitTime);  // 不能直接使用timeout，因为如果虚假唤醒的话，继续等待timeout个时间，那么总的等待时间就超过timeout了
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                passedTime = System.currentTimeMillis() - begin;
+            }
+            return result;
+        }
+    }
+    public void complete(Object result) {
+        synchronized (this) {
+            this.result = result;
+            notifyAll();
+        }
+    }
+}
+class GuardedObjectTest {
+    public static void main(String[] args) {
+        GuardedObject object = new GuardedObject();
+        new Thread(() -> {
+            Object result = object.get(2000);
+            System.out.println(result);
+        }, "t1").start();
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            object.complete(null);
+        }, "t2").start();
+    }
+}
+
