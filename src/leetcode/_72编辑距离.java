@@ -62,10 +62,10 @@ public class _72编辑距离 {
         int m = s.length(), n = t.length();
         int[][] dp = new int[m + 1][n + 1];
         // 1、初始化(对应dfs中的边界)
-        for (int i = 1; i <= m; i++) {
+        for (int i = 1; i <= m; i++) {  // i表示s中字符的个数，dp[i][0]中j==0也就是说target为空串，那么只能采取删除操作
             dp[i][0] = i;
         }
-        for (int j = 1; j <= n; j++) {
+        for (int j = 1; j <= n; j++) {  // j表示t中字符的个数，dp[0][j]中i==0表示s为空串，那么只能采取插入操作
             dp[0][j] = j;
         }
         // 2、dp计算
