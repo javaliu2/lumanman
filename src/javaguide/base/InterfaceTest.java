@@ -16,3 +16,19 @@ public interface InterfaceTest {
 //        System.out.println("private meth");
 //    }
 }
+
+/**
+ * package-level，包内可以访问，包外不可以
+ */
+interface InterfaceA {
+
+}
+// private不可以修饰接口
+//private interface InterfaceB {
+//
+//}
+
+// protected也是不可以的
+//protected interface InterfaceC {
+//
+//}

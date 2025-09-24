@@ -1,9 +1,12 @@
 package javaguide.collection;
 
+import javaguide.base.InterfaceTest;
+
 import java.util.*;
 
 public class SetTest {
     public static void main(String[] args) {
+        InterfaceTest a;
         System.out.println("== HashSet 示例 ==");
         Set<String> hashSet = new HashSet<>();
         hashSet.add("banana");
