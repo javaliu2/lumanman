@@ -1,5 +1,7 @@
 package leetcode.diff_array;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -22,5 +24,13 @@ public class _3347执行操作后元素的最高频率II {
             ans = Math.max(ans, Math.min(sumD, cnt.getOrDefault(e.getKey(), 0) + numOperations));
         }
         return ans;
+    }
+
+    @Test
+    public void testMaxFrequency() {
+        int[] nums = new int[]{1, 4, 5};
+        int k = 1;
+        int numOperations = 2;
+        maxFrequency(nums, k, numOperations);
     }
 }
