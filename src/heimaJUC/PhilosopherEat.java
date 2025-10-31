@@ -1,5 +1,7 @@
 package heimaJUC;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * 哲学家就餐问题：
  * 有n位哲学家以及n根筷子，每根筷子放在哲学家两侧，每位哲学家都要吃饭-思考，不断重复吃饭-思考
@@ -37,8 +39,17 @@ class Philosopher extends Thread {
         this.right = right;
     }
 
-    @Override
-    public void run() {
+    /**
+     * 会出现死锁的代码
+     * 1、死锁的第二个条件，占有且等待（hold and wait）
+     * 一个线程已经占有了至少一个资源，同时又请求新的资源，但被阻塞时，不释放已占有的资源
+     * 哲学家A获得左手的筷子，去尝试获取右手的筷子时，假如哲学家A右手的筷子已经被他右边的哲学家B占有（该筷子是哲学家B左手的筷子），
+     * 所以出现了阻塞（synchronized关键字是阻塞获取锁），同时哲学家A不释放已经占有的左手筷子
+     * 2、互斥条件: 资源不能被多个线程同时使用，即某一时刻，一个资源只能分配给一个线程
+     * 3、不可剥夺条件: 资源一旦被线程占有，不能强行剥夺，只能由线程自己释放
+     * 4、循环等待条件: 存在一个线程-资源的循环等待链
+     */
+    public void run_deadlock() {
         // 重复吃饭-思考
         while (true) {
             synchronized (left) {
@@ -49,6 +60,25 @@ class Philosopher extends Thread {
         }
     }
 
+    @Override
+    public void run() {
+        while (true) {
+            // 尝试获取左筷子，拿不到的话，释放对左筷子的占有
+            if (left.tryLock()) {
+                try {
+                    if (right.tryLock()) {
+                        try {
+                            eating();
+                        } finally {
+                            right.unlock();
+                        }
+                    }
+                } finally {
+                    left.unlock();
+                }
+            }
+        }
+    }
     private void eating() {
         try {
             Thread.sleep(1000);  // 思考
@@ -58,7 +88,7 @@ class Philosopher extends Thread {
         System.out.println(Thread.currentThread().getName() + "正在吃饭");
     }
 }
-class Chopstick {
+class Chopstick extends ReentrantLock {
     private String name;
     public Chopstick(String name) {
         this.name = name;
